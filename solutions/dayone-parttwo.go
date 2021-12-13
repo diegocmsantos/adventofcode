@@ -20,28 +20,49 @@ func DayTwo() int {
 
 	scanner.Split(bufio.ScanLines)
 
-	var counter, buffCounter, previous int
-	var buff [3]int
+	var counter int
+	var buff []int
+	c := make(chan int)
 	for scanner.Scan() {
 		line := scanner.Text()
+		buff = append(buff, convertStringToInt(line))
 
-		if buffCounter < 3 {
-			n := convertStringToInt(line)
-			buff[buffCounter] = n
-			buffCounter++
-			continue
+		if counter%6 == 0 {
+			go diff(c, buff[counter-6:counter])
 		}
-		buffCounter = 0
 
-		lineInt := buff[0] + buff[1] + buff[2]
-		if lineInt > previous {
-			counter++
+		for {
+			res, ok := <-c
+			if !ok {
+				break
+			}
+			counter += res
 		}
-		previous = lineInt
 	}
 	defer file.Close()
 
-	return count - 1
+	return counter - 1
+}
+
+func diff(c chan int, ar []int) {
+	if len(ar) == 0 {
+		close(c)
+	}
+	var times, sumA, sumB, sumC, sumD int
+	if len(ar) == 4 {
+		sumA = ar[0] + ar[1] + ar[2]
+		sumB = ar[1] + ar[2] + ar[3]
+		sumC = ar[2] + ar[3] + ar[4]
+		sumD = ar[3] + ar[4] + ar[5]
+	}
+
+	if sumB > sumA {
+		times++
+	}
+	if sumD > sumC {
+		times++
+	}
+	c <- times
 }
 
 func convertStringToInt(ns string) int {
@@ -52,9 +73,12 @@ func convertStringToInt(ns string) int {
 	return n
 }
 
-func shiftArray(ar []int, lastNumber int) {
-	for i := 1; i < len(ar)-1; i++ {
+func shiftArray(ar [3]int, lastNumber int) [3]int {
+	// fmt.Printf("shifArray: %+v, %d\n", ar, lastNumber)
+	for i := 1; i < len(ar); i++ {
 		ar[i-1] = ar[i]
 	}
 	ar[len(ar)-1] = lastNumber
+	// fmt.Printf("shifArray end: %+v\n", ar)
+	return ar
 }
